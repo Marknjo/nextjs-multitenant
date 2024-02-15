@@ -1,4 +1,4 @@
 const Page = () => {
-  return <div>Page</div>;
+  return <div>Domain path page</div>;
 };
 export default Page;
