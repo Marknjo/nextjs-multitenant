@@ -1,0 +1,51 @@
+services:
+  multDb:
+    image: mongo
+    container_name: plura-db
+    restart: always
+    ports:
+      - 27023:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASS}
+    volumes:
+      # Rename this key to preference and update volumes section
+      - plura-db-data:/data/db
+
+  studio:
+    image: mongo-express
+    container_name: plura-studio
+    restart: always
+    ports:
+      - 8091:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${DB_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${DB_PASS}
+      ME_CONFIG_MONGODB_URL: ${ME_URI}
+      ME_CONFIG_OPTIONS_EDITORTHEME: ${ME_THEME}
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_USER}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_PASS}
+
+  # plura Containers
+  # reservations:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/reservations/Dockerfile
+  #     target: development
+  #     tags:
+  #       - plura-reservations-dev
+  #   container_name: dev-reservations
+  #   command: >
+  #     bun run dev reservations
+  #     # pnpm run dev reservations
+
+  #   env_file:
+  #     - .env
+
+  #   ports:
+  #     - 3031:3031
+  #   volumes:
+  #     - .:/usr/src/app
+
+volumes:
+  plura-db-data:
