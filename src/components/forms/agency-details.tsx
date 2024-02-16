@@ -6,8 +6,8 @@ import { NumberInput } from '@tremor/react';
 import { Agency } from '@prisma/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 
-import { useToast } from '@/components/ui/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,11 +59,11 @@ import Loading from '@/components/globals/loading';
 type Props = {
   data?: Partial<Agency>;
 };
+
 const AgencyDetails = ({ data }: Props) => {
-  const { toast } = useToast();
   const router = useRouter();
   const [deletingAgency, setDeletingAgency] = useState<boolean>(false);
-  const [pending, startTransition] = useTransition();
+  let [pending, startTransition] = useTransition();
 
   const form = useForm<TAgencyDetailsSchema>({
     resolver: zodResolver(AgencyDetailsSchema),
@@ -82,59 +82,59 @@ const AgencyDetails = ({ data }: Props) => {
     },
   });
 
-  async function handleSubmit(values: TAgencyDetailsSchema) {
+  const handleSubmit = async (values: TAgencyDetailsSchema) => {
     startTransition(async () => {
       try {
         let newUserData;
-        let ctId; // customerId
+        let ctId = await generateRandomMongoId(); // uncomment after connecting stripe -customerId
 
-        if (!data?.id) {
-          const bodyData = {
-            email: values.companyEmail,
-            name: values.name,
-            shipping: {
-              address: {
-                city: values.city,
-                country: values.country,
-                line1: values.address,
-                postal_code: values.zipCode,
-                state: values.zipCode,
-              },
-              name: values.name,
-            },
-            address: {
-              city: values.city,
-              country: values.country,
-              line1: values.address,
-              postal_code: values.zipCode,
-              state: values.zipCode,
-            },
-          };
+        // if (!data?.id) {
+        //   const bodyData = {
+        //     email: values.companyEmail,
+        //     name: values.name,
+        //     shipping: {
+        //       address: {
+        //         city: values.city,
+        //         country: values.country,
+        //         line1: values.address,
+        //         postal_code: values.zipCode,
+        //         state: values.zipCode,
+        //       },
+        //       name: values.name,
+        //     },
+        //     address: {
+        //       city: values.city,
+        //       country: values.country,
+        //       line1: values.address,
+        //       postal_code: values.zipCode,
+        //       state: values.zipCode,
+        //     },
+        //   };
 
-          const customerResponse = await fetch('/api/stripe/create-customer', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(bodyData),
-          });
+        //   const customerResponse = await fetch('/api/stripe/create-customer', {
+        //     method: 'POST',
+        //     headers: {
+        //       'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify(bodyData),
+        //   });
 
-          const customerData: { customerId: string } =
-            await customerResponse.json();
-          ctId = customerData.customerId;
-        }
+        //   const customerData: { customerId: string } =
+        //     await customerResponse.json();
+        //   ctId = customerData.customerId;
+        // }
 
         newUserData = await initUser({ role: 'AGENCY_OWNER' });
 
-        if (!data?.customerId && !ctId) return;
-
         const mdId = await generateRandomMongoId();
+
+        if (!data?.customerId && !ctId) return;
 
         const response = await upsertAgency({
           id: data?.id ? data.id : mdId,
           customerId: data?.customerId || ctId || '',
           address: values.address,
-          agencyLogo: values.agencyLogo,
+          agencyLogo: 'values.agencyLogo',
           city: values.city,
           companyPhone: values.companyPhone,
           country: values.country,
@@ -149,9 +149,7 @@ const AgencyDetails = ({ data }: Props) => {
           goal: 5,
         });
 
-        toast({
-          title: 'Created Agency',
-        });
+        toast.success('Created Agency');
 
         form.reset();
 
@@ -161,15 +159,12 @@ const AgencyDetails = ({ data }: Props) => {
           return router.refresh();
         }
       } catch (error) {
-        console.log(error);
-        toast({
-          variant: 'destructive',
-          title: 'Oops!',
+        toast.error('Oops!', {
           description: 'could not create your agency',
         });
       }
     });
-  }
+  };
 
   const handleDeleteAgency = async () => {
     if (!data?.id) return;
@@ -177,16 +172,13 @@ const AgencyDetails = ({ data }: Props) => {
     //WIP: discontinue the subscription
     try {
       const response = await deleteAgency(data.id);
-      toast({
-        title: 'Deleted Agency',
+      toast.success('Deleted Agency', {
         description: 'Deleted your agency and all subaccounts',
       });
       router.refresh();
     } catch (error) {
       console.log(error);
-      toast({
-        variant: 'destructive',
-        title: 'Oops!',
+      toast.error('Oops!', {
         description: 'could not delete your agency ',
       });
     }
@@ -203,6 +195,7 @@ const AgencyDetails = ({ data }: Props) => {
             settings later from the agency settings tab.
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <Form {...form}>
             <form
@@ -241,6 +234,7 @@ const AgencyDetails = ({ data }: Props) => {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   disabled={pending}
                   name='companyEmail'
@@ -249,7 +243,11 @@ const AgencyDetails = ({ data }: Props) => {
                     <FormItem className='flex-1'>
                       <FormLabel>Agency Email</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder='company@email.com' />
+                        <Input
+                          {...field}
+                          type='email'
+                          placeholder='company@email.com'
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -297,6 +295,7 @@ const AgencyDetails = ({ data }: Props) => {
                   </FormItem>
                 )}
               />
+
               <FormField
                 disabled={pending}
                 name='address'
@@ -311,6 +310,7 @@ const AgencyDetails = ({ data }: Props) => {
                   </FormItem>
                 )}
               />
+
               <div className='flex flex-col md:flex-row gap-4'>
                 <FormField
                   disabled={pending}
@@ -325,7 +325,8 @@ const AgencyDetails = ({ data }: Props) => {
                       <FormMessage />
                     </FormItem>
                   )}
-                />{' '}
+                />
+
                 <FormField
                   disabled={pending}
                   name='zipCode'
@@ -339,7 +340,8 @@ const AgencyDetails = ({ data }: Props) => {
                       <FormMessage />
                     </FormItem>
                   )}
-                />{' '}
+                />
+
                 <FormField
                   disabled={pending}
                   name='state'
@@ -355,6 +357,7 @@ const AgencyDetails = ({ data }: Props) => {
                   )}
                 />
               </div>
+
               <FormField
                 disabled={pending}
                 name='country'
@@ -400,7 +403,8 @@ const AgencyDetails = ({ data }: Props) => {
                   />
                 </div>
               )}
-              <Button type='submit' disabled={pending}>
+
+              <Button type='submit'>
                 {pending ? <Loading /> : 'Save Agency Information'}
               </Button>
             </form>
@@ -412,7 +416,7 @@ const AgencyDetails = ({ data }: Props) => {
                 <div>Danger Zone</div>
               </div>
               <div className='text-muted-foreground'>
-                Deleting your agency cannpt be undone. This will also delete all
+                Deleting your agency cannot be undone. This will also delete all
                 sub accounts and all data related to your sub accounts. Sub
                 accounts will no longer have access to funnels, contacts etc.
               </div>

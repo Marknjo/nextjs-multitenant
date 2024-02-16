@@ -1,7 +1,8 @@
-import { ClerkProvider } from '@clerk/nextjs';
+import { ClerkProvider, currentUser } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
+import { redirect } from 'next/navigation';
 
-const ProtectedLayout = ({
+const ProtectedLayout = async ({
   children,
 }: Readonly<{
   children: React.ReactNode;
