@@ -43,6 +43,7 @@
     "@radix-ui/react-tooltip": "^1.0.7",
     "@tremor/react": "^3.14.0",
     "@uploadthing/react": "^6.2.2",
+    "bson": "^6.3.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "^0.2.1",
