@@ -1,13 +1,36 @@
 services:
-  multDb:
-    image: mongo
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.mongo
+      args:
+        MONGO_VERSION: latest
     container_name: plura-db
-    restart: always
+    restart: unless-stopped
     ports:
-      - 27023:27017
+      - 27023:27019
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${DB_PASS}
+      MONGO_REPLICA_HOST: 127.0.0.1
+      MONGO_REPLICA_PORT: 27019
+      # Use "mongo" instead of "mongosh" before v5.0
+      MONGO_COMMAND: 'mongosh'
+    healthcheck:
+      # Use "mongo" instead of "mongosh" before v5.0
+      test:
+        [
+          'CMD',
+          'mongosh',
+          'admin',
+          '--port',
+          '27019',
+          '--eval',
+          "db.adminCommand('ping').ok",
+        ]
+      interval: 5s
+      timeout: 2s
+      retries: 20
     volumes:
       # Rename this key to preference and update volumes section
       - plura-db-data:/data/db
