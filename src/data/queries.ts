@@ -34,6 +34,7 @@ export const generateRandomMongoId = async () => {
 
 export const getAuthUserDetails = async () => {
   const user = await currentUser();
+
   if (!user) {
     return;
   }
@@ -145,7 +146,10 @@ export const saveActivityLogsNotification = async ({
   }
 };
 
-export const createTeamUser = async (agencyId: string, user: User) => {
+export const createTeamUser = async (
+  agencyId: string,
+  user: Omit<User, 'authId'>
+) => {
   if (user.role === 'AGENCY_OWNER') return null;
   const response = await db.user.create({ data: { ...user } });
   return response;
@@ -153,7 +157,9 @@ export const createTeamUser = async (agencyId: string, user: User) => {
 
 export const verifyAndAcceptInvitation = async () => {
   const user = await currentUser();
+
   if (!user) return redirect('/sign-in');
+
   const invitationExists = await db.invitation.findUnique({
     where: {
       email: user.emailAddresses[0].emailAddress,
@@ -172,6 +178,7 @@ export const verifyAndAcceptInvitation = async () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
     await saveActivityLogsNotification({
       agencyId: invitationExists?.agencyId,
       description: `Joined`,
@@ -201,6 +208,7 @@ export const verifyAndAcceptInvitation = async () => {
         email: user.emailAddresses[0].emailAddress,
       },
     });
+
     return agency
       ? { agencyId: agency.agencyId, authUser: user }
       : {
@@ -228,6 +236,7 @@ export const deleteAgency = async (agencyId: string) => {
 
 export const initUser = async (newUser: Partial<User>) => {
   const user = await currentUser();
+
   if (!user) return;
 
   const userData = await db.user.upsert({
@@ -236,7 +245,7 @@ export const initUser = async (newUser: Partial<User>) => {
     },
     update: newUser,
     create: {
-      id: user.id,
+      authId: user.id, // hack for mongoDb
       avatarUrl: user.imageUrl,
       email: user.emailAddresses[0].emailAddress,
       name: `${user.firstName} ${user.lastName}`,
@@ -253,14 +262,25 @@ export const initUser = async (newUser: Partial<User>) => {
   return userData;
 };
 
-export const upsertAgency = async (agency: Agency, price?: Plan) => {
+export const upsertAgency = async (
+  agency: Omit<Agency, 'id'> & { id?: string },
+  price?: Plan
+) => {
   if (!agency.companyEmail) return null;
+
+  // only for mongo db - id is auto-generated
+  const updateData = {
+    ...agency,
+    id: undefined,
+  };
+  delete updateData.id;
+
   try {
     const agencyDetails = await db.agency.upsert({
       where: {
-        id: agency.id,
+        id: agency?.id,
       },
-      update: agency,
+      update: updateData,
       create: {
         users: {
           connect: { email: agency.companyEmail },
@@ -302,6 +322,7 @@ export const upsertAgency = async (agency: Agency, price?: Plan) => {
         },
       },
     });
+
     return agencyDetails;
   } catch (error) {
     console.log(error);
