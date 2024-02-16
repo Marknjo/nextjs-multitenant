@@ -67,6 +67,8 @@ enum InvitationStatus {
 
 model User {
   id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  /// A little hack to fix clerk id mismatch with mongo id 
+  authId       String?
   name         String
   avatarUrl    String         @db.String
   email        String         @unique
