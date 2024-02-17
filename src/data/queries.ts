@@ -354,13 +354,23 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
       role: 'AGENCY_OWNER',
     },
   });
-  if (!agencyOwner) return console.log('🔴Erorr could not create subaccount');
-  const permissionId = v4();
+
+  if (!agencyOwner) return console.log('🔴Error could not create subaccount');
+
+  const permissionId = await generateRandomMongoId();
+
+  const subAccountData = {
+    ...subAccount,
+    id: undefined,
+  };
+
+  delete subAccountData.id;
+
   const response = await db.subAccount.upsert({
     where: { id: subAccount.id },
-    update: subAccount,
+    update: subAccountData,
     create: {
-      ...subAccount,
+      ...subAccountData,
       Permissions: {
         create: {
           access: true,
