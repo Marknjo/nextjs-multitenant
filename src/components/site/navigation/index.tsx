@@ -1,4 +1,4 @@
-import { ModeToggle } from '@/components/mode-toggle';
+import { ModeToggle } from '@/components/globals/mode-toggle';
 import { UserButton } from '@clerk/nextjs';
 import { User } from '@clerk/nextjs/server';
 
