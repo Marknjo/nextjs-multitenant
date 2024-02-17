@@ -134,7 +134,7 @@ const AgencyDetails = ({ data }: Props) => {
           id: data?.id ? data.id : mdId,
           customerId: data?.customerId || ctId || '',
           address: values.address,
-          agencyLogo: 'values.agencyLogo',
+          agencyLogo: values?.agencyLogo,
           city: values.city,
           companyPhone: values.companyPhone,
           country: values.country,
